@@ -16,8 +16,21 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::all();
-        return response()->json($users);
+        $query = User::query();
+
+        // Filtrado
+        if ($request->has('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+
+        if ($request->has('email')) {
+            $query->where('email', 'like', '%' . $request->input('email') . '%');
+        }
+
+        // Paginación
+        $users = $query->paginate(10); // Paginación de 10 usuarios por página
+
+        return view('user.showAll', compact('users'));
     }
 
     /**
@@ -27,7 +40,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        // Puedes retornar una vista con un formulario de creación si es necesario.
+        return view('user.create');
     }
 
     /**
@@ -58,8 +71,7 @@ class UserController extends Controller
             'phone' => $request->phone,
         ]);
 
-        return response()->json($user, 201);
-    }
+        return redirect()->route('users.showAll')->with('success', 'User created successfully');    }
 
     /**
      * Mostrar los detalles de un usuario específico.
@@ -72,10 +84,11 @@ class UserController extends Controller
         $user = User::find($id);
 
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+            return redirect()->route('users.showAll')
+                             ->with('error', 'User not found');
         }
 
-        return response()->json($user);
+        return view('user.show', compact('user'));
     }
 
     /**
@@ -86,8 +99,14 @@ class UserController extends Controller
      */
     public function edit($id)
     {
-        // Puedes retornar una vista con un formulario de edición si es necesario.
-    }
+        $user = User::find($id);
+
+        if (!$user) {
+            return redirect()->route('users.showAll')
+                             ->with('error', 'User not found');
+        }
+
+        return view('user.edit', compact('user'));    }
 
     /**
      * Actualizar un usuario existente en la base de datos.
@@ -107,13 +126,17 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
+            return redirect()->route('users.edit', $id)
+                             ->withErrors($validator)
+                             ->withInput();
+                             }
 
-        $user = User::find($id);
+             $user = User::find($id);
 
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+            return redirect()->route('users.showAll')
+                             ->with('error', 'User not found');
+
         }
 
         $user->update([
@@ -124,8 +147,7 @@ class UserController extends Controller
             'phone' => $request->phone ?? $user->phone,
         ]);
 
-        return response()->json($user);
-    }
+        return redirect()->route('users.show', $id)->with('success', 'User updated successfully');    }
 
     /**
      * Eliminar un usuario específico de la base de datos.
@@ -138,12 +160,13 @@ class UserController extends Controller
         $user = User::find($id);
 
         if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
+            return redirect()->route('users.showAll')
+                             ->with('error', 'User not found');
         }
 
         $user->delete();
 
-        return response()->json(['message' => 'User deleted successfully']);
+        return redirect()->route('users.showAll')->with('success', 'User deleted successfully');
     }
 }
 

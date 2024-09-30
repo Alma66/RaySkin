@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Product;
@@ -10,14 +11,35 @@ use Illuminate\Support\Facades\Validator;
 class ProductController extends Controller
 {
     /**
-     * Mostrar una lista de todos los productos.
+     * Mostrar una lista de todos los productos con paginación y filtrado.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with(['brand', 'category'])->get();
-        return response()->json($products);
+        $query = Product::query()->with(['brand', 'category']);
+
+        // Filtrado
+        if ($request->has('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+
+        if ($request->has('brand_id')) {
+            $query->where('brand_id', $request->input('brand_id'));
+        }
+
+        if ($request->has('category_id')) {
+            $query->where('category_id', $request->input('category_id'));
+        }
+
+        // Paginación
+        $products = $query->paginate(10); // Paginación de 10 productos por página
+
+        // Obtener listas para filtros
+        $brands = Brand::all();
+        $categories = Category::all();
+
+        return view('product.showAll', compact('products', 'brands', 'categories'));
     }
 
     /**
@@ -27,7 +49,9 @@ class ProductController extends Controller
      */
     public function create()
     {
-        // Puedes retornar una vista con un formulario de creación si es necesario.
+        $brands = Brand::all();
+        $categories = Category::all();
+        return view('product.create', compact('brands', 'categories'));
     }
 
     /**
@@ -48,10 +72,12 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('products.create')
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
-        $product = Product::create([
+        Product::create([
             'name' => $request->name,
             'description' => $request->description,
             'price' => $request->price,
@@ -60,7 +86,7 @@ class ProductController extends Controller
             'category_id' => $request->category_id,
         ]);
 
-        return response()->json($product, 201);
+        return redirect()->route('products.showAll')->with('success', 'Product created successfully');
     }
 
     /**
@@ -74,10 +100,11 @@ class ProductController extends Controller
         $product = Product::with(['brand', 'category'])->find($id);
 
         if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
+            return redirect()->route('products.showAll')
+                             ->with('error', 'Product not found');
         }
 
-        return response()->json($product);
+        return view('product.show', compact('product'));
     }
 
     /**
@@ -88,7 +115,17 @@ class ProductController extends Controller
      */
     public function edit($id)
     {
-        // Puedes retornar una vista con un formulario de edición si es necesario.
+        $product = Product::find($id);
+
+        if (!$product) {
+            return redirect()->route('products.showAll')
+                             ->with('error', 'Product not found');
+        }
+
+        $brands = Brand::all();
+        $categories = Category::all();
+
+        return view('product.edit', compact('product', 'brands', 'categories'));
     }
 
     /**
@@ -110,13 +147,16 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('products.edit', $id)
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
         $product = Product::find($id);
 
         if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
+            return redirect()->route('products.showAll')
+                             ->with('error', 'Product not found');
         }
 
         $product->update([
@@ -128,7 +168,7 @@ class ProductController extends Controller
             'category_id' => $request->category_id ?? $product->category_id,
         ]);
 
-        return response()->json($product);
+        return redirect()->route('products.show', $id)->with('success', 'Product updated successfully');
     }
 
     /**
@@ -142,12 +182,12 @@ class ProductController extends Controller
         $product = Product::find($id);
 
         if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
+            return redirect()->route('products.showAll')
+                             ->with('error', 'Product not found');
         }
 
         $product->delete();
 
-        return response()->json(['message' => 'Product deleted successfully']);
+        return redirect()->route('products.showAll')->with('success', 'Product deleted successfully');
     }
 }
-

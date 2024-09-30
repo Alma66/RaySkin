@@ -9,14 +9,23 @@ use Illuminate\Support\Facades\Validator;
 class CategoryController extends Controller
 {
     /**
-     * Mostrar una lista de todas las categorías.
+     * Mostrar una lista de todas las categorías con paginación y filtrado.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::all();
-        return response()->json($categories);
+        $query = Category::query();
+
+        // Filtrado
+        if ($request->has('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+
+        // Paginación
+        $categories = $query->paginate(10); // Paginación de 10 categorías por página
+
+        return view('category.showAll', compact('categories'));
     }
 
     /**
@@ -26,7 +35,7 @@ class CategoryController extends Controller
      */
     public function create()
     {
-        // Puedes retornar una vista con un formulario de creación si es necesario.
+        return view('category.create');
     }
 
     /**
@@ -43,15 +52,17 @@ class CategoryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('categories.create')
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
-        $category = Category::create([
+        Category::create([
             'name' => $request->name,
             'description' => $request->description,
         ]);
 
-        return response()->json($category, 201);
+        return redirect()->route('categories.showAll')->with('success', 'Category created successfully');
     }
 
     /**
@@ -65,10 +76,11 @@ class CategoryController extends Controller
         $category = Category::find($id);
 
         if (!$category) {
-            return response()->json(['message' => 'Category not found'], 404);
+            return redirect()->route('categories.showAll')
+                             ->with('error', 'Category not found');
         }
 
-        return response()->json($category);
+        return view('category.show', compact('category'));
     }
 
     /**
@@ -79,7 +91,14 @@ class CategoryController extends Controller
      */
     public function edit($id)
     {
-        // Puedes retornar una vista con un formulario de edición si es necesario.
+        $category = Category::find($id);
+
+        if (!$category) {
+            return redirect()->route('categories.showAll')
+                             ->with('error', 'Category not found');
+        }
+
+        return view('category.edit', compact('category'));
     }
 
     /**
@@ -97,13 +116,16 @@ class CategoryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('categories.edit', $id)
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
         $category = Category::find($id);
 
         if (!$category) {
-            return response()->json(['message' => 'Category not found'], 404);
+            return redirect()->route('categories.showAll')
+                             ->with('error', 'Category not found');
         }
 
         $category->update([
@@ -111,7 +133,7 @@ class CategoryController extends Controller
             'description' => $request->description ?? $category->description,
         ]);
 
-        return response()->json($category);
+        return redirect()->route('categories.show', $id)->with('success', 'Category updated successfully');
     }
 
     /**
@@ -125,12 +147,14 @@ class CategoryController extends Controller
         $category = Category::find($id);
 
         if (!$category) {
-            return response()->json(['message' => 'Category not found'], 404);
+            return redirect()->route('categories.showAll')
+                             ->with('error', 'Category not found');
         }
 
         $category->delete();
 
-        return response()->json(['message' => 'Category deleted successfully']);
+        return redirect()->route('categories.showAll')->with('success', 'Category deleted successfully');
     }
 }
+
 

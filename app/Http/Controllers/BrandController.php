@@ -9,14 +9,23 @@ use Illuminate\Support\Facades\Validator;
 class BrandController extends Controller
 {
     /**
-     * Mostrar una lista de todas las marcas.
+     * Mostrar una lista de todas las marcas con paginación y filtrado.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $brands = Brand::all();
-        return response()->json($brands);
+        $query = Brand::query();
+
+        // Filtrado
+        if ($request->has('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+
+        // Paginación
+        $brands = $query->paginate(10); // Paginación de 10 marcas por página
+
+        return view('brand.showAll', compact('brands'));
     }
 
     /**
@@ -26,7 +35,7 @@ class BrandController extends Controller
      */
     public function create()
     {
-        // Puedes retornar una vista con un formulario de creación si es necesario.
+        return view('brand.create');
     }
 
     /**
@@ -43,15 +52,17 @@ class BrandController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('brands.create')
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
-        $brand = Brand::create([
+        Brand::create([
             'name' => $request->name,
             'description' => $request->description,
         ]);
 
-        return response()->json($brand, 201);
+        return redirect()->route('brands.showAll')->with('success', 'Brand created successfully');
     }
 
     /**
@@ -65,10 +76,11 @@ class BrandController extends Controller
         $brand = Brand::find($id);
 
         if (!$brand) {
-            return response()->json(['message' => 'Brand not found'], 404);
+            return redirect()->route('brands.showAll')
+                             ->with('error', 'Brand not found');
         }
 
-        return response()->json($brand);
+        return view('brand.show', compact('brand'));
     }
 
     /**
@@ -79,7 +91,14 @@ class BrandController extends Controller
      */
     public function edit($id)
     {
-        // Puedes retornar una vista con un formulario de edición si es necesario.
+        $brand = Brand::find($id);
+
+        if (!$brand) {
+            return redirect()->route('brands.showAll')
+                             ->with('error', 'Brand not found');
+        }
+
+        return view('brand.edit', compact('brand'));
     }
 
     /**
@@ -97,13 +116,16 @@ class BrandController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('brands.edit', $id)
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
         $brand = Brand::find($id);
 
         if (!$brand) {
-            return response()->json(['message' => 'Brand not found'], 404);
+            return redirect()->route('brands.showAll')
+                             ->with('error', 'Brand not found');
         }
 
         $brand->update([
@@ -111,7 +133,7 @@ class BrandController extends Controller
             'description' => $request->description ?? $brand->description,
         ]);
 
-        return response()->json($brand);
+        return redirect()->route('brands.show', $id)->with('success', 'Brand updated successfully');
     }
 
     /**
@@ -125,12 +147,13 @@ class BrandController extends Controller
         $brand = Brand::find($id);
 
         if (!$brand) {
-            return response()->json(['message' => 'Brand not found'], 404);
+            return redirect()->route('brands.showAll')
+                             ->with('error', 'Brand not found');
         }
 
         $brand->delete();
 
-        return response()->json(['message' => 'Brand deleted successfully']);
+        return redirect()->route('brands.showAll')->with('success', 'Brand deleted successfully');
     }
 }
 

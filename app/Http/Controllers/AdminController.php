@@ -10,14 +10,27 @@ use Illuminate\Support\Facades\Hash;
 class AdminController extends Controller
 {
     /**
-     * Mostrar una lista de todos los administradores.
+     * Mostrar una lista de todos los administradores con paginación y filtrado.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $admins = Admin::all();
-        return response()->json($admins);
+        $query = Admin::query();
+
+        // Filtrado
+        if ($request->has('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+
+        if ($request->has('email')) {
+            $query->where('email', 'like', '%' . $request->input('email') . '%');
+        }
+
+        // Paginación
+        $admins = $query->paginate(10); // Paginación de 10 administradores por página
+
+        return view('admin.showAll', compact('admins'));
     }
 
     /**
@@ -27,7 +40,7 @@ class AdminController extends Controller
      */
     public function create()
     {
-        // Puedes retornar una vista con un formulario de creación si es necesario.
+        return view('admin.create');
     }
 
     /**
@@ -45,16 +58,18 @@ class AdminController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('admins.create')
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
-        $admin = Admin::create([
+        Admin::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
 
-        return response()->json($admin, 201);
+        return redirect()->route('admins.showAll')->with('success', 'Admin created successfully');
     }
 
     /**
@@ -68,10 +83,11 @@ class AdminController extends Controller
         $admin = Admin::find($id);
 
         if (!$admin) {
-            return response()->json(['message' => 'Admin not found'], 404);
+            return redirect()->route('admins.showAll')
+                             ->with('error', 'Admin not found');
         }
 
-        return response()->json($admin);
+        return view('admin.show', compact('admin'));
     }
 
     /**
@@ -82,7 +98,14 @@ class AdminController extends Controller
      */
     public function edit($id)
     {
-        // Puedes retornar una vista con un formulario de edición si es necesario.
+        $admin = Admin::find($id);
+
+        if (!$admin) {
+            return redirect()->route('admins.showAll')
+                             ->with('error', 'Admin not found');
+        }
+
+        return view('admin.edit', compact('admin'));
     }
 
     /**
@@ -101,13 +124,16 @@ class AdminController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('admins.edit', $id)
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
         $admin = Admin::find($id);
 
         if (!$admin) {
-            return response()->json(['message' => 'Admin not found'], 404);
+            return redirect()->route('admins.showAll')
+                             ->with('error', 'Admin not found');
         }
 
         $admin->update([
@@ -116,7 +142,7 @@ class AdminController extends Controller
             'password' => $request->password ? Hash::make($request->password) : $admin->password,
         ]);
 
-        return response()->json($admin);
+        return redirect()->route('admins.show', $id)->with('success', 'Admin updated successfully');
     }
 
     /**
@@ -130,12 +156,12 @@ class AdminController extends Controller
         $admin = Admin::find($id);
 
         if (!$admin) {
-            return response()->json(['message' => 'Admin not found'], 404);
+            return redirect()->route('admins.showAll')
+                             ->with('error', 'Admin not found');
         }
 
         $admin->delete();
 
-        return response()->json(['message' => 'Admin deleted successfully']);
+        return redirect()->route('admins.showAll')->with('success', 'Admin deleted successfully');
     }
 }
-

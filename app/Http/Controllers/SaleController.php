@@ -17,8 +17,29 @@ class SaleController extends Controller
      */
     public function index()
     {
-        $sales = Sale::with(['user', 'paymentMethod'])->get();
-        return response()->json($sales);
+        $query = Sale::query()->with(['user', 'paymentMethod']);
+
+        // Filtrado
+        if ($request->has('user_id')) {
+            $query->where('user_id', $request->input('user_id'));
+        }
+
+        if ($request->has('payment_method_id')) {
+            $query->where('payment_method_id', $request->input('payment_method_id'));
+        }
+
+        if ($request->has('sale_date')) {
+            $query->whereDate('sale_date', $request->input('sale_date'));
+        }
+
+        // Paginación
+        $sales = $query->paginate(10); // Paginación de 10 ventas por página
+
+        // Obtener listas para filtros
+        $users = User::all();
+        $paymentMethods = PaymentMethod::all();
+
+        return view('sale.showAll', compact('sales', 'users', 'paymentMethods'));
     }
 
     /**
@@ -28,8 +49,9 @@ class SaleController extends Controller
      */
     public function create()
     {
-        // Puedes retornar una vista con un formulario de creación si es necesario.
-    }
+        $users = User::all();
+        $paymentMethods = PaymentMethod::all();
+        return view('sale.create', compact('users', 'paymentMethods'));    }
 
     /**
      * Almacenar una nueva venta en la base de datos.
@@ -47,17 +69,19 @@ class SaleController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('sales.create')
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
-        $sale = Sale::create([
+        Sale::create([
             'user_id' => $request->user_id,
             'total' => $request->total,
             'sale_date' => $request->sale_date,
             'payment_method_id' => $request->payment_method_id,
         ]);
 
-        return response()->json($sale, 201);
+        return redirect()->route('sales.showAll')->with('success', 'Sale created successfully');
     }
 
     /**
@@ -71,10 +95,11 @@ class SaleController extends Controller
         $sale = Sale::with(['user', 'paymentMethod'])->find($id);
 
         if (!$sale) {
-            return response()->json(['message' => 'Sale not found'], 404);
+           return redirect()->route('sales.showAll')
+                             ->with('error', 'Sale not found');
         }
 
-        return response()->json($sale);
+        return view('sale.show', compact('sale'));
     }
 
     /**
@@ -85,8 +110,18 @@ class SaleController extends Controller
      */
     public function edit($id)
     {
-        // Puedes retornar una vista con un formulario de edición si es necesario.
-    }
+        $sale = Sale::find($id);
+
+        if (!$sale) {
+            return redirect()->route('sales.showAll')
+                             ->with('error', 'Sale not found');
+        }
+
+        $users = User::all();
+        $paymentMethods = PaymentMethod::all();
+
+        return view('sale.edit', compact('sale', 'users', 'paymentMethods'));
+     }
 
     /**
      * Actualizar una venta existente en la base de datos.
@@ -105,14 +140,18 @@ class SaleController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('sales.edit', $id)
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
         $sale = Sale::find($id);
 
         if (!$sale) {
-            return response()->json(['message' => 'Sale not found'], 404);
+            return redirect()->route('sales.showAll')
+                             ->with('error', 'Sale not found');
         }
+
 
         $sale->update([
             'user_id' => $request->user_id ?? $sale->user_id,
@@ -121,7 +160,7 @@ class SaleController extends Controller
             'payment_method_id' => $request->payment_method_id ?? $sale->payment_method_id,
         ]);
 
-        return response()->json($sale);
+        return redirect()->route('sales.show', $id)->with('success', 'Sale updated successfully');
     }
 
     /**
@@ -135,12 +174,13 @@ class SaleController extends Controller
         $sale = Sale::find($id);
 
         if (!$sale) {
-            return response()->json(['message' => 'Sale not found'], 404);
-        }
+            return redirect()->route('sales.showAll')
+            ->with('error', 'Sale not found');
+            }
 
-        $sale->delete();
+            $sale->delete();
 
-        return response()->json(['message' => 'Sale deleted successfully']);
+            return redirect()->route('sales.showAll')->with('success', 'Sale deleted successfully');
     }
 }
 

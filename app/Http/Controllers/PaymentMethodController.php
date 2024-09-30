@@ -15,8 +15,17 @@ class PaymentMethodController extends Controller
      */
     public function index()
     {
-        $paymentMethods = PaymentMethod::all();
-        return response()->json($paymentMethods);
+        $query = PaymentMethod::query();
+
+        // Filtrado
+        if ($request->has('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+
+        // Paginación
+        $paymentMethods = $query->paginate(10); // Paginación de 10 métodos por página
+
+        return view('paymentMethod.showAll', compact('paymentMethods'));
     }
 
     /**
@@ -26,8 +35,7 @@ class PaymentMethodController extends Controller
      */
     public function create()
     {
-        // Puedes retornar una vista con un formulario de creación si es necesario.
-    }
+        return view('paymentMethod.create');    }
 
     /**
      * Almacenar un nuevo método de pago en la base de datos.
@@ -43,18 +51,18 @@ class PaymentMethodController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('paymentMethods.create')
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
-        $paymentMethod = PaymentMethod::create([
+        PaymentMethod::create([
             'name' => $request->name,
             'description' => $request->description,
         ]);
 
-        return response()->json($paymentMethod, 201);
-    }
-
-    /**
+        return redirect()->route('paymentMethods.showAll')->with('success', 'Payment method created successfully');
+    }    /**
      * Mostrar los detalles de un método de pago específico.
      *
      * @param  int  $id
@@ -65,11 +73,12 @@ class PaymentMethodController extends Controller
         $paymentMethod = PaymentMethod::find($id);
 
         if (!$paymentMethod) {
-            return response()->json(['message' => 'Payment method not found'], 404);
+            return redirect()->route('paymentMethods.showAll')
+                             ->with('error', 'Payment method not found');
         }
 
-        return response()->json($paymentMethod);
-    }
+        return view('paymentMethod.show', compact('paymentMethod'));
+     }
 
     /**
      * Mostrar el formulario para editar un método de pago existente.
@@ -79,8 +88,14 @@ class PaymentMethodController extends Controller
      */
     public function edit($id)
     {
-        // Puedes retornar una vista con un formulario de edición si es necesario.
-    }
+        $paymentMethod = PaymentMethod::find($id);
+
+        if (!$paymentMethod) {
+            return redirect()->route('paymentMethods.showAll')
+                             ->with('error', 'Payment method not found');
+        }
+
+        return view('paymentMethod.edit', compact('paymentMethod'));    }
 
     /**
      * Actualizar un método de pago existente en la base de datos.
@@ -97,13 +112,16 @@ class PaymentMethodController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('paymentMethods.edit', $id)
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
         $paymentMethod = PaymentMethod::find($id);
 
         if (!$paymentMethod) {
-            return response()->json(['message' => 'Payment method not found'], 404);
+            return redirect()->route('paymentMethods.showAll')
+                             ->with('error', 'Payment method not found');
         }
 
         $paymentMethod->update([
@@ -111,7 +129,7 @@ class PaymentMethodController extends Controller
             'description' => $request->description ?? $paymentMethod->description,
         ]);
 
-        return response()->json($paymentMethod);
+        return redirect()->route('paymentMethods.show', $id)->with('success', 'Payment method updated successfully');
     }
 
     /**
@@ -125,11 +143,12 @@ class PaymentMethodController extends Controller
         $paymentMethod = PaymentMethod::find($id);
 
         if (!$paymentMethod) {
-            return response()->json(['message' => 'Payment method not found'], 404);
+            return redirect()->route('paymentMethods.showAll')
+                             ->with('error', 'Payment method not found');
         }
 
         $paymentMethod->delete();
 
-        return response()->json(['message' => 'Payment method deleted successfully']);
+        return redirect()->route('paymentMethods.showAll')->with('success', 'Payment method deleted successfully');
     }
 }

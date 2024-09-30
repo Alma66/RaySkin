@@ -9,14 +9,23 @@ use Illuminate\Support\Facades\Validator;
 class PackController extends Controller
 {
     /**
-     * Mostrar una lista de todos los paquetes.
+     * Mostrar una lista de todos los paquetes con paginación y filtrado.
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $packs = Pack::all();
-        return response()->json($packs);
+        $query = Pack::query();
+
+        // Filtrado
+        if ($request->has('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+
+        // Paginación
+        $packs = $query->paginate(10); // Paginación de 10 paquetes por página
+
+        return view('pack.showAll', compact('packs'));
     }
 
     /**
@@ -26,7 +35,7 @@ class PackController extends Controller
      */
     public function create()
     {
-        // Puedes retornar una vista con un formulario de creación si es necesario.
+        return view('pack.create');
     }
 
     /**
@@ -45,17 +54,19 @@ class PackController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('packs.create')
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
-        $pack = Pack::create([
+        Pack::create([
             'name' => $request->name,
             'description' => $request->description,
             'price' => $request->price,
             'discount' => $request->discount,
         ]);
 
-        return response()->json($pack, 201);
+        return redirect()->route('packs.showAll')->with('success', 'Pack created successfully');
     }
 
     /**
@@ -69,10 +80,11 @@ class PackController extends Controller
         $pack = Pack::find($id);
 
         if (!$pack) {
-            return response()->json(['message' => 'Pack not found'], 404);
+            return redirect()->route('packs.showAll')
+                             ->with('error', 'Pack not found');
         }
 
-        return response()->json($pack);
+        return view('pack.show', compact('pack'));
     }
 
     /**
@@ -83,7 +95,14 @@ class PackController extends Controller
      */
     public function edit($id)
     {
-        // Puedes retornar una vista con un formulario de edición si es necesario.
+        $pack = Pack::find($id);
+
+        if (!$pack) {
+            return redirect()->route('packs.showAll')
+                             ->with('error', 'Pack not found');
+        }
+
+        return view('pack.edit', compact('pack'));
     }
 
     /**
@@ -103,13 +122,16 @@ class PackController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('packs.edit', $id)
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
         $pack = Pack::find($id);
 
         if (!$pack) {
-            return response()->json(['message' => 'Pack not found'], 404);
+            return redirect()->route('packs.showAll')
+                             ->with('error', 'Pack not found');
         }
 
         $pack->update([
@@ -119,7 +141,7 @@ class PackController extends Controller
             'discount' => $request->discount ?? $pack->discount,
         ]);
 
-        return response()->json($pack);
+        return redirect()->route('packs.show', $id)->with('success', 'Pack updated successfully');
     }
 
     /**
@@ -133,12 +155,13 @@ class PackController extends Controller
         $pack = Pack::find($id);
 
         if (!$pack) {
-            return response()->json(['message' => 'Pack not found'], 404);
+            return redirect()->route('packs.showAll')
+                             ->with('error', 'Pack not found');
         }
 
         $pack->delete();
 
-        return response()->json(['message' => 'Pack deleted successfully']);
+        return redirect()->route('packs.showAll')->with('success', 'Pack deleted successfully');
     }
 }
 

@@ -17,8 +17,33 @@ class ReviewController extends Controller
      */
     public function index()
     {
-        $reviews = Review::with(['pack', 'user'])->get();
-        return response()->json($reviews);
+        $query = Review::query()->with(['pack', 'user']);
+
+        // Filtrado
+        if ($request->has('pack_id')) {
+            $query->where('pack_id', $request->input('pack_id'));
+        }
+
+        if ($request->has('user_id')) {
+            $query->where('user_id', $request->input('user_id'));
+        }
+
+        if ($request->has('rating')) {
+            $query->where('rating', $request->input('rating'));
+        }
+
+        if ($request->has('review_date')) {
+            $query->whereDate('review_date', $request->input('review_date'));
+        }
+
+        // Paginación
+        $reviews = $query->paginate(10); // Paginación de 10 reseñas por página
+
+        // Obtener listas para filtros
+        $packs = Pack::all();
+        $users = User::all();
+
+        return view('review.showAll', compact('reviews', 'packs', 'users'));
     }
 
     /**
@@ -28,8 +53,9 @@ class ReviewController extends Controller
      */
     public function create()
     {
-        // Puedes retornar una vista con un formulario de creación si es necesario.
-    }
+        $packs = Pack::all();
+        $users = User::all();
+        return view('review.create', compact('packs', 'users'));    }
 
     /**
      * Almacenar una nueva reseña en la base de datos.
@@ -48,10 +74,12 @@ class ReviewController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('reviews.create')
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
-        $review = Review::create([
+        Review::create([
             'pack_id' => $request->pack_id,
             'user_id' => $request->user_id,
             'rating' => $request->rating,
@@ -59,7 +87,7 @@ class ReviewController extends Controller
             'review_date' => $request->review_date,
         ]);
 
-        return response()->json($review, 201);
+        return redirect()->route('reviews.showAll')->with('success', 'Review created successfully');
     }
 
     /**
@@ -73,10 +101,11 @@ class ReviewController extends Controller
         $review = Review::with(['pack', 'user'])->find($id);
 
         if (!$review) {
-            return response()->json(['message' => 'Review not found'], 404);
-        }
+            return redirect()->route('reviews.showAll')
+            ->with('error', 'Review not found');
+            }
 
-        return response()->json($review);
+            return view('review.show', compact('review'));
     }
 
     /**
@@ -87,8 +116,18 @@ class ReviewController extends Controller
      */
     public function edit($id)
     {
-        // Puedes retornar una vista con un formulario de edición si es necesario.
-    }
+        $review = Review::find($id);
+
+        if (!$review) {
+            return redirect()->route('reviews.showAll')
+                             ->with('error', 'Review not found');
+        }
+
+        $packs = Pack::all();
+        $users = User::all();
+
+        return view('review.edit', compact('review', 'packs', 'users'));
+        }
 
     /**
      * Actualizar una reseña existente en la base de datos.
@@ -108,15 +147,17 @@ class ReviewController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return redirect()->route('reviews.edit', $id)
+                             ->withErrors($validator)
+                             ->withInput();
         }
 
         $review = Review::find($id);
 
         if (!$review) {
-            return response()->json(['message' => 'Review not found'], 404);
+            return redirect()->route('reviews.showAll')
+                             ->with('error', 'Review not found');
         }
-
         $review->update([
             'pack_id' => $request->pack_id ?? $review->pack_id,
             'user_id' => $request->user_id ?? $review->user_id,
@@ -125,7 +166,7 @@ class ReviewController extends Controller
             'review_date' => $request->review_date ?? $review->review_date,
         ]);
 
-        return response()->json($review);
+        return redirect()->route('reviews.show', $id)->with('success', 'Review updated successfully');
     }
 
     /**
@@ -139,12 +180,13 @@ class ReviewController extends Controller
         $review = Review::find($id);
 
         if (!$review) {
-            return response()->json(['message' => 'Review not found'], 404);
+            return redirect()->route('reviews.showAll')
+                             ->with('error', 'Review not found');
         }
 
         $review->delete();
 
-        return response()->json(['message' => 'Review deleted successfully']);
+        return redirect()->route('reviews.showAll')->with('success', 'Review deleted successfully');
     }
 }
 
