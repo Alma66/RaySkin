@@ -228,10 +228,6 @@ return [
         ],
 
         // Mensagens personalizadas para o controlador ReviewController
-        'review_pack_id' => [
-            'required' => 'O ID do pacote é obrigatório.',
-            'exists' => 'O pacote selecionado é inválido.',
-        ],
         'review_user_id' => [
             'required' => 'O ID do usuário é obrigatório.',
             'exists' => 'O usuário selecionado é inválido.',
@@ -247,7 +243,10 @@ return [
             'string' => 'O comentário deve ser uma string.',
             'max' => 'O comentário não pode ter mais de :max caracteres.',
         ],
-        
+        'review_product_id' => [
+            'required' => 'O ID do pacote é obrigatório.',
+            'exists' => 'O pacote selecionado é inválido.',
+        ],
         // Mensagens personalizadas para o controlador SaleController
         'sale_user_id' => [
             'required' => 'O ID do usuário é obrigatório.',
@@ -331,7 +330,7 @@ return [
         'product_brand_id' => 'marca',
         'product_category_id' => 'categoria',
         //Review
-        'review_pack_id' => 'pack',
+        'review_product_id' => 'producto',
         'review_user_id' => 'usuário',
         'review_rating' => 'classificação',
         'review_comment' => 'comentário',

@@ -228,10 +228,6 @@ return [
             ],
 
             // Custom messages for ReviewController
-            'review_pack_id' => [
-                'required' => 'The pack ID is required.',
-                'exists' => 'The selected pack is invalid.',
-            ],
             'review_user_id' => [
                 'required' => 'The user ID is required.',
                 'exists' => 'The selected user is invalid.',
@@ -247,6 +243,10 @@ return [
                 'nullable' => 'The comment is optional.',
                 'string' => 'The comment must be a string.',
                 'max' => 'The comment may not be greater than :max characters.',
+            ],
+            'review_product_id' => [
+                'required' => 'The pack ID is required.',
+                'exists' => 'The selected pack is invalid.',
             ],
 
             // Custom messages for SaleController
@@ -331,7 +331,7 @@ return [
     'product_brand_id' => 'brand',
     'product_category_id' => 'category',
     //Review
-    'review_pack_id' => 'pack',
+    'review_product_id' => 'product',
     'review_user_id' => 'user',
     'review_rating' => 'rating',
     'review_comment' => 'comment',
