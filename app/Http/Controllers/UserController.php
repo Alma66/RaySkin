@@ -14,7 +14,7 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $query = User::query();
 
@@ -49,29 +49,20 @@ class UserController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreUserRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'address' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
+        $validatedData = $request->validated();
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'address' => $request->address,
-            'phone' => $request->phone,
+            'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'password' => Hash::make($validatedData['password']),
+            'address' => $validatedData['address'] ?? null,
+            'phone' => $validatedData['phone'] ?? null,
         ]);
 
-        return redirect()->route('users.showAll')->with('success', 'User created successfully');    }
+        return redirect()->route('users.showAll')->with('success', 'User created successfully');
+    }
 
     /**
      * Mostrar los detalles de un usuario específico.
@@ -115,40 +106,27 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateUserRequest $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|string|email|max:255|unique:users,email,' . $id,
-            'password' => 'sometimes|required|string|min:8|confirmed',
-            'address' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-        ]);
+        $validatedData = $request->validated();
 
-        if ($validator->fails()) {
-            return redirect()->route('users.edit', $id)
-                             ->withErrors($validator)
-                             ->withInput();
-                             }
-
-             $user = User::find($id);
+        $user = User::find($id);
 
         if (!$user) {
             return redirect()->route('users.showAll')
                              ->with('error', 'User not found');
-
         }
 
         $user->update([
-            'name' => $request->name ?? $user->name,
-            'email' => $request->email ?? $user->email,
-            'password' => $request->password ? Hash::make($request->password) : $user->password,
-            'address' => $request->address ?? $user->address,
-            'phone' => $request->phone ?? $user->phone,
+            'name' => $validatedData['name'] ?? $user->name,
+            'email' => $validatedData['email'] ?? $user->email,
+            'password' => isset($validatedData['password']) ? Hash::make($validatedData['password']) : $user->password,
+            'address' => $validatedData['address'] ?? $user->address,
+            'phone' => $validatedData['phone'] ?? $user->phone,
         ]);
 
-        return redirect()->route('users.show', $id)->with('success', 'User updated successfully');    }
-
+        return redirect()->route('users.show', $id)->with('success', 'User updated successfully');
+    }
     /**
      * Eliminar un usuario específico de la base de datos.
      *

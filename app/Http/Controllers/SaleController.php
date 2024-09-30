@@ -15,7 +15,7 @@ class SaleController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $query = Sale::query()->with(['user', 'paymentMethod']);
 
@@ -59,30 +59,20 @@ class SaleController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreSaleRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-            'total' => 'required|numeric|min:0',
-            'sale_date' => 'required|date',
-            'payment_method_id' => 'required|exists:payment_methods,id',
-        ]);
+        $validatedData = $request->validated();
 
-        if ($validator->fails()) {
-            return redirect()->route('sales.create')
-                             ->withErrors($validator)
-                             ->withInput();
-        }
-
-        Sale::create([
-            'user_id' => $request->user_id,
-            'total' => $request->total,
-            'sale_date' => $request->sale_date,
-            'payment_method_id' => $request->payment_method_id,
+        $sale =  Sale::create([
+            'user_id' => $validatedData['user_id'],
+            'total' => $validatedData['total'],
+            'sale_date' => $validatedData['sale_date'],
+            'payment_method_id' => $validatedData['payment_method_id'],
         ]);
 
         return redirect()->route('sales.showAll')->with('success', 'Sale created successfully');
     }
+
 
     /**
      * Mostrar los detalles de una venta específica.
@@ -130,20 +120,9 @@ class SaleController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(StoreSaleRequest $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'sometimes|required|exists:users,id',
-            'total' => 'sometimes|required|numeric|min:0',
-            'sale_date' => 'sometimes|required|date',
-            'payment_method_id' => 'sometimes|required|exists:payment_methods,id',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->route('sales.edit', $id)
-                             ->withErrors($validator)
-                             ->withInput();
-        }
+        $validatedData = $request->validated();
 
         $sale = Sale::find($id);
 
@@ -152,12 +131,11 @@ class SaleController extends Controller
                              ->with('error', 'Sale not found');
         }
 
-
         $sale->update([
-            'user_id' => $request->user_id ?? $sale->user_id,
-            'total' => $request->total ?? $sale->total,
-            'sale_date' => $request->sale_date ?? $sale->sale_date,
-            'payment_method_id' => $request->payment_method_id ?? $sale->payment_method_id,
+            'user_id' => $validatedData['user_id'] ?? $sale->user_id,
+            'total' => $validatedData['total'] ?? $sale->total,
+            'sale_date' => $validatedData['sale_date'] ?? $sale->sale_date,
+            'payment_method_id' => $validatedData['payment_method_id'] ?? $sale->payment_method_id,
         ]);
 
         return redirect()->route('sales.show', $id)->with('success', 'Sale updated successfully');

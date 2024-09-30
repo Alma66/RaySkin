@@ -18,10 +18,10 @@
     <form action="{{ route('reviews.store') }}" method="POST">
         @csrf
         <div class="form-group">
-            <label for="pack_id">Pack</label>
-            <select id="pack_id" name="pack_id" class="form-control" required>
-                @foreach ($packs as $pack)
-                    <option value="{{ $pack->id }}">{{ $pack->name }}</option>
+            <label for="product_id">Product</label>
+            <select id="product_id" name="product_id" class="form-control" required>
+                @foreach ($product as $product)
+                    <option value="{{ $product->id }}">{{ $product->name }}</option>
                 @endforeach
             </select>
         </div>

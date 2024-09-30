@@ -60,30 +60,17 @@ class ProductController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'brand_id' => 'required|exists:brands,id',
-            'category_id' => 'required|exists:categories,id',
-        ]);
+        $validatedData = $request->validated();
 
-        if ($validator->fails()) {
-            return redirect()->route('products.create')
-                             ->withErrors($validator)
-                             ->withInput();
-        }
-
-        Product::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'brand_id' => $request->brand_id,
-            'category_id' => $request->category_id,
+        $product = Product::create([
+            'name' => $validatedData['name'],
+            'description' => $validatedData['description'],
+            'price' => $validatedData['price'],
+            'stock' => $validatedData['stock'],
+            'brand_id' => $validatedData['brand_id'],
+            'category_id' => $validatedData['category_id'],
         ]);
 
         return redirect()->route('products.showAll')->with('success', 'Product created successfully');
@@ -135,24 +122,11 @@ class ProductController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateProductRequest $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'price' => 'sometimes|required|numeric|min:0',
-            'stock' => 'sometimes|required|integer|min:0',
-            'brand_id' => 'sometimes|required|exists:brands,id',
-            'category_id' => 'sometimes|required|exists:categories,id',
-        ]);
+        $validatedData = $request->validated();
 
-        if ($validator->fails()) {
-            return redirect()->route('products.edit', $id)
-                             ->withErrors($validator)
-                             ->withInput();
-        }
-
-        $product = Product::find($id);
+        $product = UpdateProductRequest::find($id);
 
         if (!$product) {
             return redirect()->route('products.showAll')
@@ -160,12 +134,12 @@ class ProductController extends Controller
         }
 
         $product->update([
-            'name' => $request->name ?? $product->name,
-            'description' => $request->description ?? $product->description,
-            'price' => $request->price ?? $product->price,
-            'stock' => $request->stock ?? $product->stock,
-            'brand_id' => $request->brand_id ?? $product->brand_id,
-            'category_id' => $request->category_id ?? $product->category_id,
+            'name' => $validatedData['name'] ?? $product->name,
+            'description' => $validatedData['description'] ?? $product->description,
+            'price' => $validatedData['price'] ?? $product->price,
+            'stock' => $validatedData['stock'] ?? $product->stock,
+            'brand_id' => $validatedData['brand_id'] ?? $product->brand_id,
+            'category_id' => $validatedData['category_id'] ?? $product->category_id,
         ]);
 
         return redirect()->route('products.show', $id)->with('success', 'Product updated successfully');

@@ -4,7 +4,7 @@
 @section('content')
 <div class="container">
     <h1>Edit Review</h1>
-    
+
     @if ($errors->any())
     <div class="alert alert-danger">
         <ul>
@@ -19,11 +19,11 @@
         @csrf
         @method('PUT')
         <div class="form-group">
-            <label for="pack_id">Pack</label>
-            <select id="pack_id" name="pack_id" class="form-control" required>
-                @foreach ($packs as $pack)
-                    <option value="{{ $pack->id }}" {{ $pack->id == $review->pack_id ? 'selected' : '' }}>
-                        {{ $pack->name }}
+            <label for="product_id">Product</label>
+            <select id="product_id" name="product_id" class="form-control" required>
+                @foreach ($products as $product)
+                    <option value="{{ $product->id }}" {{ $product->id == $review->product_id ? 'selected' : '' }}>
+                        {{ $product->name }}
                     </option>
                 @endforeach
             </select>

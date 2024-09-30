@@ -21,7 +21,7 @@
             @foreach ($reviews as $review)
                 <tr>
                     <td>{{ $review->id }}</td>
-                    <td>{{ $review->pack->name }}</td>
+                    <td>{{ $review->product->name }}</td>
                     <td>{{ $review->user->name }}</td>
                     <td>{{ $review->rating }}</td>
                     <td>{{ $review->comment }}</td>

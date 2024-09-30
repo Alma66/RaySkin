@@ -13,7 +13,7 @@ class PaymentMethodController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $query = PaymentMethod::query();
 
@@ -35,7 +35,8 @@ class PaymentMethodController extends Controller
      */
     public function create()
     {
-        return view('paymentMethod.create');    }
+        return view('paymentMethod.create');
+    }
 
     /**
      * Almacenar un nuevo método de pago en la base de datos.
@@ -43,22 +44,13 @@ class PaymentMethodController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StorePaymentMethodRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-        ]);
+        $validatedData = $request->validated();
 
-        if ($validator->fails()) {
-            return redirect()->route('paymentMethods.create')
-                             ->withErrors($validator)
-                             ->withInput();
-        }
-
-        PaymentMethod::create([
-            'name' => $request->name,
-            'description' => $request->description,
+        $paymentMethod = PaymentMethod::create([
+            'name' => $validatedData['name'],
+            'description' => $validatedData['description'],
         ]);
 
         return redirect()->route('paymentMethods.showAll')->with('success', 'Payment method created successfully');
@@ -104,18 +96,9 @@ class PaymentMethodController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdatePaymentMethodRequest $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->route('paymentMethods.edit', $id)
-                             ->withErrors($validator)
-                             ->withInput();
-        }
+        $validatedData = $request->validated();
 
         $paymentMethod = PaymentMethod::find($id);
 
@@ -125,8 +108,8 @@ class PaymentMethodController extends Controller
         }
 
         $paymentMethod->update([
-            'name' => $request->name ?? $paymentMethod->name,
-            'description' => $request->description ?? $paymentMethod->description,
+            'name' => $validatedData['name'] ?? $paymentMethod->name,
+            'description' => $validatedData['description'] ?? $paymentMethod->description,
         ]);
 
         return redirect()->route('paymentMethods.show', $id)->with('success', 'Payment method updated successfully');

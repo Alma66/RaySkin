@@ -4,7 +4,7 @@
 @section('content')
 <div class="container">
     <h1>Review Details</h1>
-    <p><strong>Pack:</strong> {{ $review->pack->name }}</p>
+    <p><strong>product:</strong> {{ $review->product->name }}</p>
     <p><strong>User:</strong> {{ $review->user->name }}</p>
     <p><strong>Rating:</strong> {{ $review->rating }}</p>
     <p><strong>Comment:</strong> {{ $review->comment }}</p>

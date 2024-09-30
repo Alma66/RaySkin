@@ -44,26 +44,15 @@ class PackController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StorePackRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'price' => 'required|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0|max:100',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->route('packs.create')
-                             ->withErrors($validator)
-                             ->withInput();
-        }
+        $validatedData = $request->validated();
 
         Pack::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'discount' => $request->discount,
+            'name' => $validatedData['name'],
+            'description' => $validatedData['description'],
+            'price' => $validatedData['price'],
+            'discount' => $validatedData['discount'],
         ]);
 
         return redirect()->route('packs.showAll')->with('success', 'Pack created successfully');
@@ -112,20 +101,9 @@ class PackController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdatePackRequest $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'price' => 'sometimes|required|numeric|min:0',
-            'discount' => 'sometimes|nullable|numeric|min:0|max:100',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->route('packs.edit', $id)
-                             ->withErrors($validator)
-                             ->withInput();
-        }
+        $validatedData = $request->validated();
 
         $pack = Pack::find($id);
 
@@ -135,10 +113,10 @@ class PackController extends Controller
         }
 
         $pack->update([
-            'name' => $request->name ?? $pack->name,
-            'description' => $request->description ?? $pack->description,
-            'price' => $request->price ?? $pack->price,
-            'discount' => $request->discount ?? $pack->discount,
+           'name' => $validatedData['name'] ?? $pack->name,
+            'description' => $validatedData['description'] ?? $pack->description,
+            'price' => $validatedData['price'] ?? $pack->price,
+            'discount' => $validatedData['discount'] ?? $pack->discount,
         ]);
 
         return redirect()->route('packs.show', $id)->with('success', 'Pack updated successfully');

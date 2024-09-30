@@ -44,22 +44,15 @@ class CategoryController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreCategoryRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-        ]);
+        $validatedData = $request->validated();
 
-        if ($validator->fails()) {
-            return redirect()->route('categories.create')
-                             ->withErrors($validator)
-                             ->withInput();
-        }
 
-        Category::create([
-            'name' => $request->name,
-            'description' => $request->description,
+
+        $category = Category::create([
+           'name' => $validatedData['name'],
+            'description' => $validatedData['description'],
         ]);
 
         return redirect()->route('categories.showAll')->with('success', 'Category created successfully');
@@ -108,18 +101,9 @@ class CategoryController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateCategoryRequest $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->route('categories.edit', $id)
-                             ->withErrors($validator)
-                             ->withInput();
-        }
+        $validatedData = $request->validated();
 
         $category = Category::find($id);
 
@@ -129,8 +113,8 @@ class CategoryController extends Controller
         }
 
         $category->update([
-            'name' => $request->name ?? $category->name,
-            'description' => $request->description ?? $category->description,
+            'name' => $validatedData['name'] ?? $category->name,
+            'description' => $validatedData['description'] ?? $category->description,
         ]);
 
         return redirect()->route('categories.show', $id)->with('success', 'Category updated successfully');

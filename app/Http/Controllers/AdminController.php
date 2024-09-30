@@ -49,25 +49,15 @@ class AdminController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function StoreAdminRequest(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:admins',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        $validatedData = $request->validated();
 
-        if ($validator->fails()) {
-            return redirect()->route('admins.create')
-                             ->withErrors($validator)
-                             ->withInput();
-        }
-
-        Admin::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+      $admin =  Admin::create([
+             'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'password' => Hash::make($validatedData['password']),
+           ]);
 
         return redirect()->route('admins.showAll')->with('success', 'Admin created successfully');
     }
@@ -115,19 +105,9 @@ class AdminController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateAdminRequest $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|string|email|max:255|unique:admins,email,' . $id,
-            'password' => 'nullable|string|min:8|confirmed',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->route('admins.edit', $id)
-                             ->withErrors($validator)
-                             ->withInput();
-        }
+        $validatedData = $request->validated();
 
         $admin = Admin::find($id);
 
@@ -137,10 +117,10 @@ class AdminController extends Controller
         }
 
         $admin->update([
-            'name' => $request->name ?? $admin->name,
-            'email' => $request->email ?? $admin->email,
-            'password' => $request->password ? Hash::make($request->password) : $admin->password,
-        ]);
+            'name' => $validatedData['name'] ?? $admin->name,
+            'email' => $validatedData['email'] ?? $admin->email,
+            'password' => isset($validatedData['password']) ? Hash::make($validatedData['password']) : $admin->password,
+          ]);
 
         return redirect()->route('admins.show', $id)->with('success', 'Admin updated successfully');
     }

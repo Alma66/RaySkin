@@ -15,14 +15,11 @@ class ReviewController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $query = Review::query()->with(['pack', 'user']);
+        $query = Review::query()->with(['product', 'user']);
 
         // Filtrado
-        if ($request->has('pack_id')) {
-            $query->where('pack_id', $request->input('pack_id'));
-        }
 
         if ($request->has('user_id')) {
             $query->where('user_id', $request->input('user_id'));
@@ -35,15 +32,18 @@ class ReviewController extends Controller
         if ($request->has('review_date')) {
             $query->whereDate('review_date', $request->input('review_date'));
         }
+        if ($request->has('product_id')) {
+            $query->where('product_id', $request->input('product_id'));
+        }
 
         // Paginación
         $reviews = $query->paginate(10); // Paginación de 10 reseñas por página
 
         // Obtener listas para filtros
-        $packs = Pack::all();
+        $product = Product::all();
         $users = User::all();
 
-        return view('review.showAll', compact('reviews', 'packs', 'users'));
+        return view('review.showAll', compact('reviews', 'products', 'users'));
     }
 
     /**
@@ -53,9 +53,9 @@ class ReviewController extends Controller
      */
     public function create()
     {
-        $packs = Pack::all();
+        $product = Product::all();
         $users = User::all();
-        return view('review.create', compact('packs', 'users'));    }
+        return view('review.create', compact('productS', 'users'));    }
 
     /**
      * Almacenar una nueva reseña en la base de datos.
@@ -63,32 +63,21 @@ class ReviewController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'pack_id' => 'required|exists:packs,id',
-            'user_id' => 'required|exists:users,id',
-            'rating' => 'required|integer|between:1,5',
-            'comment' => 'nullable|string|max:1000',
-            'review_date' => 'required|date',
-        ]);
+    public function store(StoreReviewRequest $request)
+{
+    $validatedData = $request->validated();
 
-        if ($validator->fails()) {
-            return redirect()->route('reviews.create')
-                             ->withErrors($validator)
-                             ->withInput();
-        }
+    $review = Review::create([
+        'user_id' => $validatedData['user_id'],
+        'rating' => $validatedData['rating'],
+        'comment' => $validatedData['comment'],
+        'review_date' => $validatedData['review_date'],
+        'product_id' => $validatedData['product_id'],
+    ]);
 
-        Review::create([
-            'pack_id' => $request->pack_id,
-            'user_id' => $request->user_id,
-            'rating' => $request->rating,
-            'comment' => $request->comment,
-            'review_date' => $request->review_date,
-        ]);
+    return redirect()->route('reviews.showAll')->with('success', 'Review created successfully');
+}
 
-        return redirect()->route('reviews.showAll')->with('success', 'Review created successfully');
-    }
 
     /**
      * Mostrar los detalles de una reseña específica.
@@ -98,11 +87,11 @@ class ReviewController extends Controller
      */
     public function show($id)
     {
-        $review = Review::with(['pack', 'user'])->find($id);
+        $review = Review::with(['product', 'user'])->find($id);
 
         if (!$review) {
             return redirect()->route('reviews.showAll')
-            ->with('error', 'Review not found');
+                             ->with('error', 'Review not found');
             }
 
             return view('review.show', compact('review'));
@@ -123,10 +112,10 @@ class ReviewController extends Controller
                              ->with('error', 'Review not found');
         }
 
-        $packs = Pack::all();
+        $producTS = Products::all();
         $users = User::all();
 
-        return view('review.edit', compact('review', 'packs', 'users'));
+        return view('review.edit', compact('review', 'products', 'users'));
         }
 
     /**
@@ -136,21 +125,9 @@ class ReviewController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateReviewRequest $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'pack_id' => 'sometimes|required|exists:packs,id',
-            'user_id' => 'sometimes|required|exists:users,id',
-            'rating' => 'sometimes|required|integer|between:1,5',
-            'comment' => 'nullable|string|max:1000',
-            'review_date' => 'sometimes|required|date',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->route('reviews.edit', $id)
-                             ->withErrors($validator)
-                             ->withInput();
-        }
+        $validatedData = $request->validated();
 
         $review = Review::find($id);
 
@@ -159,11 +136,12 @@ class ReviewController extends Controller
                              ->with('error', 'Review not found');
         }
         $review->update([
-            'pack_id' => $request->pack_id ?? $review->pack_id,
-            'user_id' => $request->user_id ?? $review->user_id,
-            'rating' => $request->rating ?? $review->rating,
-            'comment' => $request->comment ?? $review->comment,
-            'review_date' => $request->review_date ?? $review->review_date,
+
+            'user_id' => $validatedData['user_id'] ?? $sale->user_id,
+            'rating' => $validatedData['rating'] ?? $sale->rating,
+            'comment' => $validatedData['comment'] ?? $sale->comment,
+            'review_date' => $validatedData['review_date'] ?? $sale->review_date,
+            'product_id' => $validatedData['product_id'] ?? $sale->product_id,
         ]);
 
         return redirect()->route('reviews.show', $id)->with('success', 'Review updated successfully');

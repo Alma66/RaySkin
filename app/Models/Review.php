@@ -23,11 +23,11 @@ class Review extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'pack_id',
         'user_id',
         'rating',
         'comment',
         'review_date',
+        'productos_id',
     ];
 
     /**
@@ -43,9 +43,9 @@ class Review extends Model
     /**
      * Obtener el paquete asociado a la reseña.
      */
-    public function pack()
+    public function product()
     {
-        return $this->belongsTo(Pack::class);
+        return $this->belongsTo(Product::class, 'productos_id');
     }
 
     /**

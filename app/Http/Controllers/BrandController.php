@@ -44,23 +44,14 @@ class BrandController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreBrandRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-        ]);
+        $validatedData = $request->validated();
 
-        if ($validator->fails()) {
-            return redirect()->route('brands.create')
-                             ->withErrors($validator)
-                             ->withInput();
-        }
-
-        Brand::create([
-            'name' => $request->name,
-            'description' => $request->description,
-        ]);
+       $brand = Brand::create([
+        'name' => $validatedData['name'],
+        'description' => $validatedData['description'],
+     ]);
 
         return redirect()->route('brands.showAll')->with('success', 'Brand created successfully');
     }
@@ -108,18 +99,9 @@ class BrandController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateBrandRequest $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->route('brands.edit', $id)
-                             ->withErrors($validator)
-                             ->withInput();
-        }
+        $validatedData = $request->validated();
 
         $brand = Brand::find($id);
 
@@ -129,8 +111,8 @@ class BrandController extends Controller
         }
 
         $brand->update([
-            'name' => $request->name ?? $brand->name,
-            'description' => $request->description ?? $brand->description,
+            'name' => $validatedData['name'] ?? $brand->name,
+            'description' => $validatedData['description'] ?? $brand->description,
         ]);
 
         return redirect()->route('brands.show', $id)->with('success', 'Brand updated successfully');
